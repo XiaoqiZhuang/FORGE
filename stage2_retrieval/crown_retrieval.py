@@ -23,8 +23,8 @@ def parse_args():
                         help="Directory to save the retrieval results (default: same as TIF path).")
     
     # Retrieval arguments
-    parser.add_argument("--query_index", type=int, default=2,
-                        help="Index of the query tree in the candidate pool.")
+    parser.add_argument("--query_fid", type=int, required=True,
+                        help="The FID (Feature ID) of the query tree in QGIS/GPKG.")
     
     # Model arguments
     parser.add_argument("--model_size", type=str, default="dinov2_vits14",
@@ -98,14 +98,23 @@ def main():
         print("Error: Candidate pool is empty.")
         return
 
-    if args.query_index >= len(gdf):
-        print(f"Error: Index {args.query_index} out of bounds. Candidate pool size: {len(gdf)}")
+    fid_col = next((col for col in gdf.columns if col.lower() == 'fid'), None)
+    
+    if fid_col is not None:
+        query_rows = gdf[gdf[fid_col] == args.query_fid]
+    else:
+        query_rows = gdf[gdf.index == args.query_fid]
+
+    if query_rows.empty:
+        print(f"Error: could not find tree with FID {args.query_fid}! Please check the attribute table in QGIS.")
         return
         
-    print(f"Defining query tree at index: {args.query_index}")
-    query_geometry = gdf.iloc[args.query_index].geometry 
+    query_geometry = query_rows.iloc[0].geometry
+    actual_row_index = query_rows.index[0]
     
-    target_pool_gdf = gdf.drop(index=args.query_index).reset_index(drop=True)
+    print(f"Defining query tree with FID: {args.query_fid} (Internal Row Index: {actual_row_index})")
+    
+    target_pool_gdf = gdf.drop(index=actual_row_index).reset_index(drop=True)    
     embeddings = []
     
     with rasterio.open(args.tif_path) as src:
@@ -139,7 +148,7 @@ def main():
     
     output_dir = args.output_dir if args.output_dir else os.path.dirname(args.tif_path)
     base_name = os.path.basename(args.tif_path).rsplit('.', 1)[0]
-    out_path = os.path.join(output_dir, f"{base_name}_RETRIEVAL_Results_{args.query_index}_{int(time.time())}.gpkg")
+    out_path = os.path.join(output_dir, f"{base_name}_RETRIEVAL_Results_{args.query_fid}_{int(time.time())}.gpkg")
     
     print(f"Saving sorted results to: {out_path}")
     results_gdf.to_file(out_path, driver="GPKG")
