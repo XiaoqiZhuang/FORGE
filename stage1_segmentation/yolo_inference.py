@@ -106,9 +106,10 @@ def main():
     # 3. Save to Shapefile
     if geo_features:
         gdf = gpd.GeoDataFrame(geo_features, crs=crs)
-        shp_output_path = os.path.join(args.output_dir, f"{base_name}_predictions.shp")
-        gdf.to_file(shp_output_path)
-        print(f"Successfully saved {len(geo_features)} polygons to: {shp_output_path}")
+        gpkg_output_path = os.path.join(args.output_dir, f"{base_name}_predictions.gpkg")
+
+        gdf.to_file(gpkg_output_path, driver="GPKG", layer="detected_crowns")
+        print(f"Successfully saved {len(geo_features)} polygons to: {gpkg_output_path}")
     else:
         print("No objects detected. Shapefile will not be created.")
 
