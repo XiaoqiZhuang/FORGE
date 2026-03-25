@@ -1,11 +1,13 @@
 import os
 import json
 import argparse
+from tokenize import group
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics.pairwise import cosine_similarity
+from sympy import group
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Comprehensive Retrieval Analysis with Phenology and Class-level Metrics")
@@ -151,16 +153,27 @@ def main():
         best_n_fbeta = best_n_fbeta_idx + 1
         max_fbeta = fbeta_scores[best_n_fbeta_idx]
         
+        p_at_5 = mean_p_at_k[4] if len(mean_p_at_k) >= 5 else np.nan
+        p_at_10 = mean_p_at_k[9] if len(mean_p_at_k) >= 10 else np.nan
+        
         class_summary.append({
             'class_id': cls_id, 'species_name': species_name, 'mAP': class_map, 
+            'P@5': p_at_5, 'P@10': p_at_10, 
             'best_N_F1': best_n_f1, 'max_F1': max_f1,
             f'best_N_F{beta}': best_n_fbeta, f'max_F{beta}': max_fbeta,
             'sample_count': len(group)
         })
         
+        p_at_5 = mean_p_at_k[4] if len(mean_p_at_k) >= 5 else np.nan
+        p_at_10 = mean_p_at_k[9] if len(mean_p_at_k) >= 10 else np.nan
+
         fig, ax1 = plt.subplots(figsize=(9, 6))
         
         ax1.plot(common_recalls, mean_interp_p, 'b-', lw=2, label=f'PR Curve (mAP = {class_map:.3f})')
+        
+        ax1.plot([], [], ' ', label=f'  ├ P@5  = {p_at_5:.3f}')
+        ax1.plot([], [], ' ', label=f'  └ P@10 = {p_at_10:.3f}')
+        
         ax1.fill_between(common_recalls, mean_interp_p, alpha=0.1, color='blue')
         ax1.set_xlabel('Recall', fontsize=12)
         ax1.set_ylabel('Precision', color='b', fontsize=12)
