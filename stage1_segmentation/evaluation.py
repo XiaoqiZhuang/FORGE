@@ -122,7 +122,8 @@ def main():
             predictor.load_state_dict(torch.load(args.weights))
         else:
             print("No weights provided, using DeepForest default release weights.")
-            predictor.use_release()
+            predictor.load_model(model_name="weecology/deepforest-tree", revision="main")
+
             
     val_images_dir = os.path.join(args.dataset_dir, "images", "val")
     val_labels_dir = os.path.join(args.dataset_dir, "labels", "val")
@@ -191,7 +192,7 @@ def main():
 
         elif args.eval_model == "deepforest":
             start_t = time.time()
-            boxes_df = predictor.predict_image(image=img[:, :, ::-1])
+            boxes_df = predictor.predict_image(path=img_path)
             metrics['total_time'] += (time.time() - start_t)
             
             if boxes_df is not None:
